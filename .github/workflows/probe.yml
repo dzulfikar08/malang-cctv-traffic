@@ -28,3 +28,5 @@ jobs:
             "https://cctv.malangkota.go.id/cctv-stream/streams/$SEG" | grep -iE "^HTTP|content-length"
           echo "--- ffmpeg present? ---"
           ffmpeg -version | head -1
+
+# probe portal reachability from Actions runners
