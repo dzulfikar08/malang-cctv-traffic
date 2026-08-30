@@ -13,22 +13,22 @@ jobs:
           REF="https://cctv.malangkota.go.id/sebaran-cctv"
           CAM="318197263503692449077822"   # Jl. Tlogomas Arah Barat
           echo "--- control: general internet ok? ---"
-          curl -s -o /dev/null --max-time 15 -w "control=%{http_code}\n" https://www.google.com || echo "control failed exit=$?"
+          curl -sk -o /dev/null --max-time 15 -w "control=%{http_code}\n" https://www.google.com || echo "control failed exit=$?"
           echo "--- egress IP ---"
-          curl -s --max-time 15 https://api.ipify.org || true; echo
+          curl -sk --max-time 15 https://api.ipify.org || true; echo
           echo "--- warm-up GET (must be 200 and set cookies) ---"
-          curl -s -o /dev/null --max-time 20 -w "page=%{http_code} exit=%{exitcode}\n" -A "$UA" -c /tmp/cj.txt "$REF" || echo "page curl exit=$?"
+          curl -sk -o /dev/null --max-time 20 -w "page=%{http_code} exit=%{exitcode}\n" -A "$UA" -c /tmp/cj.txt "$REF" || echo "page curl exit=$?"
           grep -c NANCY /tmp/cj.txt || echo "no cookies in jar"
           echo "--- camera API ---"
-          curl -s -o /dev/null --max-time 20 -w "api=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -F "m_kecamatan_id=99" \
+          curl -sk -o /dev/null --max-time 20 -w "api=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -F "m_kecamatan_id=99" \
             "https://cctv.malangkota.go.id/api/v2/get-cameras" || echo "api curl exit=$?"
           echo "--- live playlist ---"
-          curl -s -o /tmp/pl.m3u8 --max-time 20 -w "m3u8=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -e "$REF" \
+          curl -sk -o /tmp/pl.m3u8 --max-time 20 -w "m3u8=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -e "$REF" \
             "https://cctv.malangkota.go.id/cctv-stream/streams/$CAM.m3u8" || echo "m3u8 curl exit=$?"
           head -3 /tmp/pl.m3u8 || true
           SEG=$(grep -v '^#' /tmp/pl.m3u8 | head -1)
           echo "--- segment HEAD (bytes = congestion proxy) ---"
-          curl -s -I --max-time 20 -A "$UA" -b /tmp/cj.txt -e "$REF" \
+          curl -sk -I --max-time 20 -A "$UA" -b /tmp/cj.txt -e "$REF" \
             "https://cctv.malangkota.go.id/cctv-stream/streams/$SEG" | grep -iE "^HTTP|content-length" || echo "seg curl exit=$?"
           echo "--- ffmpeg present? ---"
           ffmpeg -version | head -1
