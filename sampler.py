@@ -151,7 +151,8 @@ def ingest(rows):
         return
     req = urllib.request.Request(
         url, data=json.dumps({"rows": rows}).encode(),
-        headers={"content-type": "application/json", "x-key": key})
+        # workers.dev bot protection 403s the default "Python-urllib" UA
+        headers={"content-type": "application/json", "x-key": key, "user-agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             print("ingested:", r.read().decode()[:200])
