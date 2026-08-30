@@ -1,0 +1,11 @@
+# whitelist-only repo: everything is ignored except the listed files
+/*
+!/.gitignore
+!/README.md
+!/sampler.py
+!/pick_cameras.py
+!/data
+/data/*
+!/data/cameras_selected.csv
+!/.github
+!/.github/**

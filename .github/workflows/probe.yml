@@ -1,0 +1,30 @@
+name: probe
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Can GitHub Actions reach the Malang CCTV portal?
+        run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+          REF="https://cctv.malangkota.go.id/sebaran-cctv"
+          CAM="318197263503692449077822"   # Jl. Tlogomas Arah Barat
+          echo "--- warm-up GET (must be 200 and set cookies) ---"
+          curl -s -o /dev/null -w "page=%{http_code}\n" -A "$UA" -c /tmp/cj.txt "$REF"
+          grep -c NANCY /tmp/cj.txt || true
+          echo "--- camera API ---"
+          curl -s -o /dev/null -w "api=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -F "m_kecamatan_id=99" \
+            "https://cctv.malangkota.go.id/api/v2/get-cameras"
+          echo "--- live playlist ---"
+          curl -s -o /tmp/pl.m3u8 -w "m3u8=%{http_code}\n" -A "$UA" -b /tmp/cj.txt -e "$REF" \
+            "https://cctv.malangkota.go.id/cctv-stream/streams/$CAM.m3u8"
+          head -3 /tmp/pl.m3u8 || true
+          SEG=$(grep -v '^#' /tmp/pl.m3u8 | head -1)
+          echo "--- segment HEAD (bytes = congestion proxy) ---"
+          curl -s -I --max-time 20 -A "$UA" -b /tmp/cj.txt -e "$REF" \
+            "https://cctv.malangkota.go.id/cctv-stream/streams/$SEG" | grep -iE "^HTTP|content-length"
+          echo "--- ffmpeg present? ---"
+          ffmpeg -version | head -1
