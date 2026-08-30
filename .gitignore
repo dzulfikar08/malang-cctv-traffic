@@ -7,5 +7,6 @@
 !/data
 /data/*
 !/data/cameras_selected.csv
+!/data/samples.csv
 !/.github
 !/.github/**

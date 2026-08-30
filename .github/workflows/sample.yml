@@ -12,21 +12,21 @@ concurrency:
 jobs:
   sample:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sample congestion, push rows to the ingest API (Cloudflare D1)
-        env:
-          INGEST_URL: ${{ secrets.INGEST_URL }}
-          INGEST_KEY: ${{ secrets.INGEST_KEY }}
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Sample congestion (rows appended to data/samples.csv)
         run: python3 sampler.py
 
-      - name: Keep a local copy for debugging
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: samples
-          path: data/samples.csv
-          retention-days: 2
-          if-no-files-found: ignore
+      - name: Commit samples to the repo archive
+        run: |
+          git config user.name "cctv-bot"
+          git config user.email "dzulfikar08@users.noreply.github.com"
+          git add data/samples.csv
+          git diff --cached --quiet || git commit -q -m "samples $(date -u +%FT%TZ)"
+          git pull --rebase -q origin master || true
+          git push -q
