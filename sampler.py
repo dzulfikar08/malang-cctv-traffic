@@ -28,7 +28,7 @@ UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 TZ = ZoneInfo("Asia/Jakarta")
 DATA = Path(__file__).parent / "data"
-SAMPLES = DATA / "samples.csv"
+SAMPLES = DATA / "samples.csv"          # laptop default; GitHub Actions uses --out
 ERRORS = DATA / "errors.log"
 CAMERAS = DATA / "cameras_selected.csv"
 POLITENESS_S = 0.5          # between cameras
@@ -114,14 +114,16 @@ def sample_round(cameras, opener, delay=POLITENESS_S):
     return rows
 
 
-def append_rows(rows):
-    SAMPLES.parent.mkdir(exist_ok=True)
-    new_file = not SAMPLES.exists()
-    with open(SAMPLES, "a", newline="") as f:
+def append_rows(rows, path=None):
+    path = Path(path) if path else SAMPLES
+    path.parent.mkdir(exist_ok=True)
+    new_file = not path.exists()
+    with open(path, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["ts", "camera_id", "name", "role", "bytes", "motion", "frames"])
         if new_file:
             w.writeheader()
         w.writerows(rows)
+    return path
 
 
 def show_live(rows):
@@ -162,6 +164,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--live", action="store_true", help="print current ranking instead of recording")
     ap.add_argument("-r", "--role", help="only cameras with this role (e.g. cafe, dest1+2)")
+    ap.add_argument("--out", help="CSV path to append to (default data/samples.csv)")
     a = ap.parse_args()
 
     cameras = load_cameras()
@@ -182,8 +185,8 @@ def main():
     else:
         with open(SAMPLES.parent / ".sampler.lock", "w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
-            append_rows(rows)
-        print(f"appended -> {SAMPLES}")
+            out = append_rows(rows, a.out)
+        print(f"appended -> {out}")
         ingest(rows)
 
 

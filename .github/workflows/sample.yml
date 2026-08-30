@@ -5,6 +5,9 @@ on:
     - cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write          # the job commits data/samples_gha.csv back
+
 concurrency:
   group: sample
   cancel-in-progress: false
@@ -19,14 +22,14 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
 
-      - name: Sample congestion (rows appended to data/samples.csv)
-        run: python3 sampler.py
+      - name: Sample congestion (rows appended to data/samples_gha.csv)
+        run: python3 sampler.py --out data/samples_gha.csv
 
       - name: Commit samples to the repo archive
         run: |
           git config user.name "cctv-bot"
           git config user.email "dzulfikar08@users.noreply.github.com"
-          git add data/samples.csv
+          git add data/samples_gha.csv
           git diff --cached --quiet || git commit -q -m "samples $(date -u +%FT%TZ)"
           git pull --rebase -q origin master || true
           git push -q
