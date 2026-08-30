@@ -1,0 +1,32 @@
+name: sample
+on:
+  schedule:
+    # every 10 min, off the round minutes to spread load on the portal
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sample
+  cancel-in-progress: false
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sample congestion, push rows to the ingest API (Cloudflare D1)
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_KEY: ${{ secrets.INGEST_KEY }}
+        run: python3 sampler.py
+
+      - name: Keep a local copy for debugging
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: samples
+          path: data/samples.csv
+          retention-days: 2
+          if-no-files-found: ignore
